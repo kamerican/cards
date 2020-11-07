@@ -13,7 +13,9 @@ PLAYER_COUNT = 4
 
 @dataclass
 class Card():
-    """Card model"""
+    """
+    Card model
+    """
     suit: int
     value: int
     def __str__(self):
@@ -21,8 +23,21 @@ class Card():
             VALUES[self.value],
             SUITS[self.suit],
         )
+@dataclass
+class Player():
+    """
+    Player model
+    """
+    number: int
+    hand: List[Card]
+    def sort_hand(self) -> None:
+        """Sort a given hand by suit and then value"""
+        self.hand.sort(key=attrgetter('suit', 'value'))
+
 def display_cards(cards: List[Card]) -> None:
-    """Reveals cards"""
+    """
+    Reveals cards
+    """
     if len(cards) == 0:
         print("The card list is empty!")
     else:
@@ -30,35 +45,46 @@ def display_cards(cards: List[Card]) -> None:
         for card in cards:
             card_string += str(card) + " "
         print(card_string)
-@dataclass
+def add_players(number_of_players, hand_list: List[List[Card]]) -> List[Player]:
+    """
+    Returns a list of players that already have their hands.
+    """
+    players = []
+    for player_index in range(number_of_players):
+        player = Player(
+            number=player_index,
+            hand=hand_list[player_index],
+        )
+        players.append(player)
+    return players
+
 class Dealer():
     """Helper class for deck-related methods"""
-    # deck: List[Card] = field(default_factory=Dealer.build())
-    # deck: List[Card] = field(default=[])
-    # deck: List[Card] = []
     deck: List[Card]
-    def build(self) -> None:
-        """Construct in-order deck"""
+    def __init__(self):
         deck = []
         for suit_index in range(len(SUITS)):
             for value_index in range(len(VALUES)):
-                new_card = Card(
-                    suit=suit_index,
-                    value=value_index,
-                )
+                new_card = Card(suit_index, value_index)
                 deck.append(new_card)
                 # print("Adding {} to the deck.".format(
                 #     str(new_card),
                 # ))
         self.deck = deck
     def shuffle(self) -> None:
-        """Shuffles the deck"""
+        """
+        Shuffles the deck
+        """
         random.shuffle(self.deck)
     def deal_a_card(self) -> Card:
-        """Deals a card"""
+        """
+        Deals a card
+        """
         return self.deck.pop()
     def divide_deck_into_hands(self, number_of_players: int) -> List[List[Card]]:
-        """Deals hands from the deck given the number of players"""
+        """
+        Deals hands from the deck given the number of players
+        """
         hand_list = []
         starting_index = 0
         while starting_index < 4:
@@ -66,40 +92,18 @@ class Dealer():
             starting_index += 1
         # for hearts, consider clearing self.deck -> empty
         return hand_list
-@dataclass
-class Player():
-    """Player class"""
-    number: int
-    hand: list
-    def sort_hand(self) -> None:
-        """Sort a given hand by suit and then value"""
-        self.hand.sort(key=attrgetter('suit', 'value'))
-@dataclass
-class Hearts():
-    """Game of Hearts"""
-    players: List[Player]
-    dealer: Dealer = field(default=Dealer([]))
-    def start(self) -> None:
-        """Initialize game"""
-        self.dealer.build()
-        self.dealer.shuffle()
-        hand_list = self.dealer.divide_deck_into_hands(PLAYER_COUNT)
-        for player_index in range(PLAYER_COUNT):
-            player = Player(
-                number=player_index,
-                hand=hand_list[player_index],
-            )
-            self.players.append(player)
-    def reveal_player_hands(self) -> None:
-        """Show all players' hands"""
-        for player in self.players:
-            print("\nPlayer #{}'s hand is {} big:".format(
-                player.number + 1,
-                len(player.hand),
-            ))
-            # Dealer.display_cards(player.hand)
-            player.sort_hand()
-            display_cards(player.hand)
+
+        
+
+
+
+
+
+
+
+
+
+
 if __name__ == "__main__":
     # test_card = Card(suit=0, value=0)
     # print(test_card)
@@ -110,8 +114,25 @@ if __name__ == "__main__":
     #     Dealer.display_cards(test_hand)
     #     print("\n")
 
-    game = Hearts([])
-    game.start()
-    display_cards(game.dealer.deck)
-    game.reveal_player_hands()
+    dealer = Dealer()
+    dealer.shuffle()
+    players = add_players(
+        PLAYER_COUNT,
+        dealer.divide_deck_into_hands(PLAYER_COUNT)
+    )
 
+
+
+
+    # display_cards(dealer.deck)
+    # for player in players:
+    #     print("\nPlayer #{}'s hand is {} big:".format(
+    #         player.number + 1,
+    #         len(player.hand),
+    #     ))
+    #     # Dealer.display_cards(player.hand)
+    #     player.sort_hand()
+    #     display_cards(player.hand)
+
+
+    
