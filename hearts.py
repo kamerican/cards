@@ -9,8 +9,16 @@ from typing import List
 # SUIT_DISPLAY = ["\u2664", "\u2661", "\u2667", "\u2662"]
 SUITS = ['♠', '♡', '♣', '♢']
 TRUMP_SUIT = 1
-VALUES = ["A", "K", "Q", "J", "10", "9", "8", "7", "6", "5", "4", "3", "2"]
+VALUES = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
 PLAYER_COUNT = 4
+
+@dataclass
+class Flag():
+    """
+    Struct to keep track of game state flags.
+    """
+    trumped: bool = False
+    first_trick: bool = True
 
 @dataclass
 class Card():
@@ -24,12 +32,26 @@ class Card():
             VALUES[self.value],
             SUITS[self.suit],
         )
+
 @dataclass
 class Trick():
     """
     Trick model
     """
+
     cards_played: List[Card]
+    # suit: int
+    player_order: List[int]
+    winner: int = -1
+    points: int = 0
+
+    def __str__(self):
+        return "Card order: {}\nPlayer order: {}\nWinner: {}\nPoints: {}".format(
+            self.cards_played,
+            self.player_order,
+            self.winner,
+            self.points,
+        )
     def describe_trick(self):
         """
         Utility method to detail what happened in this trick.
@@ -41,13 +63,26 @@ class Trick():
                 player_i,
                 cards_played_in_order,
             ))
-    # def __str__(self):
-    #     return "P{0}{1}".format(
-    #         VALUES[self.value],
-    #         SUITS[self.suit],
-    #     )
-
-
+        print("Player {} won with high card {}, gaining {} points.".format(
+            self.winner,
+            cards_played[player_order.index(self.winner)],
+            self.points,
+        ))
+    def resolve(self) -> List[int]:
+        """
+        Counts points in this trick
+        """
+        current_winning_value = -1
+        for player_index, card in enumerate(self.cards_played):
+            # Find winner
+            if card.suit == self.cards_played[0].suit and card.value > current_winning_value:
+                current_winning_value = card.value
+                self.winner = self.player_order[player_index]
+            # Count points
+            if card.suit == 1:
+                self.points += 1
+            elif card.suit == 0 and card.value == 10:
+                self.points += 13
 def display_cards(cards: List[Card]) -> None:
     """
     Reveals cards
@@ -69,9 +104,11 @@ class Player():
     number: int
     hand: List[Card]
     def sort_hand(self) -> None:
-        """Sort a given hand by suit and then value"""
+        """
+        Sort a given hand by suit and then value
+        """
         self.hand.sort(key=attrgetter('suit', 'value'))
-    def play_card(self, played_cards: List[Card], trumped: bool) -> Card:
+    def play_card(self, played_cards: List[Card], flag: Flag) -> Card:
         """
         Player deliberates and then pops a card from his hand.
         """
@@ -79,15 +116,18 @@ class Player():
 
         # First player of the trick
         if not played_cards:
-            if trumped:
+            if flag.first_trick:
+                for card in self.hand:
+                    if card.suit == 2:
+                        playable_cards.append(card)
+                flag.first_trick = False
+            elif trumped:
                 for card in self.hand:
                     playable_cards.append(card)
             else:
                 for card in self.hand:
                     if card.suit != TRUMP_SUIT:
                         playable_cards.append(card)
-                if not playable_cards:
-                    playable_cards = self.hand[:]
         
         # Other players' turn
         else:
@@ -98,9 +138,9 @@ class Player():
             for card in self.hand:
                 if card.suit == trick_suit:
                     playable_cards.append(card)
-            if not playable_cards:
-                playable_cards = self.hand[:]
-        
+
+        if not playable_cards:
+            playable_cards = self.hand[:]
         print("Hand:")
         display_cards(self.hand)
         print("Playable cards:")
@@ -192,21 +232,35 @@ if __name__ == "__main__":
         PLAYER_COUNT,
         dealer.divide_deck_into_hands(PLAYER_COUNT)
     )
+    flag = Flag()
+
+
     for player in players:
         player.sort_hand()
+    
     tricks = []
     trumped = False
+
     for trick_i in range(13):
         print("\nRound: {}".format(trick_i + 1))
         cards_played = []
+        player_order = []
         for player in players:
             print("\nPlayer {}'s turn ========".format(player.number))
-            card_played = player.play_card(cards_played, trumped)
+            print("First trick = {}".format(flag.first_trick))
+
+            card_played = player.play_card(cards_played, flag)
+
             if card_played.suit == TRUMP_SUIT:
                 trumped = True
+
             cards_played.append(card_played)
-        trick = Trick(cards_played)
+            player_order.append(player.number)
+
+        trick = Trick(cards_played, player_order)
+        trick.resolve()
         trick.describe_trick()
+        print(trick)
         tricks.append(trick)
     # print(tricks)
 
